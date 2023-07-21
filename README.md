@@ -3,7 +3,10 @@
 
 ```
 # get repo
-git clone git@github.com:jbastias/lpm.git
+git clone git@github.com:dgomez04/localpasswordmanager.git
+
+# generate encryption key
+openssl rand -out encryption_key.txt 32
 
 # install dependencies
 cd /path/to/lpm
