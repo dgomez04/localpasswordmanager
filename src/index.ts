@@ -36,29 +36,43 @@ const argv = yargs(process.argv.slice(2))
 			type: 'string',
 		})
 	})
-	.command('get <filepath> <name>', 'Get password from a given key', (yargs) => {
-		yargs
-			.positional('filepath', {
-				describe: 'password file path',
-				type: 'string',
-			})
-			.positional('name', {
-				describe: 'password name',
-				type: 'string',
-			})
-	})
+	.command(
+		'get <filepath> <name>',
+		'Get password from a given key',
+		(yargs) => {
+			yargs
+				.positional('filepath', {
+					describe: 'password file path',
+					type: 'string',
+				})
+				.positional('name', {
+					describe: 'password name',
+					type: 'string',
+				})
+		},
+	)
 	.parseSync()
 
 const command = argv._[0]
+
+// map to use for objects when creating or reading JSON files.
+type jsonModel = {
+	[name: string]: string
+}
 
 // validates string is a JSON file through string pattern recognition.
 function validateJson(filepath: string) {
 	return /\.json$/.test(filepath)
 }
 
-// map to use for objects when creating JSON files.
-type jsonModel = {
-	[name: string]: string
+// reads data from the file, throws and returns empty object
+function readData(filepath: string): jsonModel {
+	try {
+		const fileData = fs.readFileSync(filepath, 'utf-8')
+		return JSON.parse(fileData)
+	} catch (err) {
+		return {}
+	}
 }
 
 // creates a new JSON file to store encrypted passwords
@@ -103,15 +117,8 @@ function newPassword(
 			console.error(`Error: The filepath ${filepath} does not exist.`)
 			return
 		}
-		// proceeds to read data from existing file, throws error if it is not able to read data.
-		let existingData: jsonModel = {}
-		try {
-			const fileData = fs.readFileSync(filepath, 'utf-8')
-			existingData = JSON.parse(fileData)
-		} catch (err) {
-			console.error(`Error: ${filepath} was not able to be read.`)
-			return
-		}
+		// proceeds to read data from existing file, creates an empty object if not
+		const existingData = readData(filepath)
 
 		// checks if user name already exists in the json file
 		if (existingData[name]) {
@@ -135,29 +142,25 @@ function newPassword(
 // lists all passwords available on asignated filepath
 function listPasswords(filepath: string | unknown) {
 	if (typeof filepath === 'string' && validateJson(filepath)) {
-
 		// checks if filepath exists
-		if(!fs.existsSync(filepath)) {
-			console.error(`Errror: ${filepath} does not exist.`)
+		if (!fs.existsSync(filepath)) {
+			console.error(`Error: ${filepath} does not exist.`)
+			return
 		}
 
-		// reads data from the file, throws error if it is not able to read data.
-		let existingData : jsonModel = {};
+		// use readData function
+		const existingData = readData(filepath)
 
-		try {
-			const fileData = fs.readFileSync(filepath, 'utf-8')
-			existingData = JSON.parse(fileData)
-		} catch (err) {
-			console.error(`Error: ${filepath} was not able to be read.`)
+		if (Object.keys(existingData).length === 0) {
+			console.log(`The object in ${filepath} is empty.`)
 			return
 		}
 
 		// iterates through the parsed data and prints the key for each result
 		console.log(`Avaialble passwords in ${filepath}:`)
-		for(const key in existingData) {
+		for (const key in existingData) {
 			console.log(key)
 		}
-		
 	} else {
 		console.error(`Error: The format is not valid.`)
 	}
@@ -165,26 +168,28 @@ function listPasswords(filepath: string | unknown) {
 
 // gets password for name in filepath
 function getPassword(filepath: string | unknown, name: string | unknown) {
-	if(typeof filepath === 'string' && typeof name === 'string' && validateJson(filepath)){
-
+	if (
+		typeof filepath === 'string' &&
+		typeof name === 'string' &&
+		validateJson(filepath)
+	) {
 		// checks if filepath exists
-		if(!fs.existsSync(filepath)) {
-			console.error(`Errror: ${filepath} does not exist.`)
+		if (!fs.existsSync(filepath)) {
+			console.error(`Error: ${filepath} does not exist.`)
+			return
 		}
 
-		// reads data from the file, throws error if it is not able to read data.
-		let existingData : jsonModel = {};
+		// uses readData function
+		const existingData = readData(filepath)
 
-		try {
-			const fileData = fs.readFileSync(filepath, 'utf-8')
-			existingData = JSON.parse(fileData)
-		} catch (err) {
-			console.error(`Error: ${filepath} was not able to be read.`)
+		// checks if existingData is empty
+		if (Object.keys(existingData).length === 0) {
+			console.log(`The object in ${filepath} is empty.`)
 			return
 		}
 
 		// iterates through parsed data, matches entered name parameter with key and logs the decrypted password to the console.
-		for(const key in existingData) {
+		for (const key in existingData) {
 			if (key === name) {
 				console.log(decryptPassword(existingData[key]))
 			}
@@ -193,6 +198,7 @@ function getPassword(filepath: string | unknown, name: string | unknown) {
 		console.error(`Error: The format is not valid.`)
 	}
 }
+
 // encrypts password utilizing createCipheriv function from Crypto module.
 function encryptPassword(password: string) {
 	const key = fs.readFileSync('encryption_key.txt')
@@ -202,8 +208,8 @@ function encryptPassword(password: string) {
 		cipher.update(password, 'utf-8', 'hex') + cipher.final('hex')
 	return iv.toString('hex') + encryptedPassword
 }
+
 // decrypts password utilizing createDecipheriv function and the encryptedPassword from the JSON file.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function decryptPassword(encryptedPassword: string) {
 	const key = fs.readFileSync('encryption_key.txt')
 	const iv = Buffer.from(encryptedPassword.slice(0, 32), 'hex')
@@ -213,8 +219,6 @@ function decryptPassword(encryptedPassword: string) {
 		decipher.update(encryptedContent, 'hex', 'utf-8') + decipher.final('utf-8')
 	return decryptedPassword
 }
-
-
 
 if (command === 'password-file') {
 	const { filepath } = argv

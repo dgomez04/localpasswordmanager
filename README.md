@@ -5,12 +5,12 @@
 # get repo
 git clone git@github.com:dgomez04/localpasswordmanager.git
 
-# generate encryption key
-openssl rand -out encryption_key.txt 32
-
 # install dependencies
 cd /path/to/lpm
 npm install
+
+# generate encryption key
+openssl rand -out encryption_key.txt 32
 
 # build
 npm run build
