@@ -17,6 +17,12 @@ npm run build
 
 # run the demo commands
 
+# help
+$ node dist/index.js --help
+
+# version
+$ node dist/index.js --version
+
 # password-file
 $ node dist/index.js password-file ./password.json
 password-file ./password.json

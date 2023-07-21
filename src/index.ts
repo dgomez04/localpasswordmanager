@@ -15,7 +15,7 @@ const argv = yargs(process.argv.slice(2))
 	})
 	.command(
 		'new-password <filepath> <name> <password>',
-		'Create a password file',
+		'Create a password',
 		(yargs) => {
 			yargs
 				.positional('filepath', {
@@ -36,7 +36,7 @@ const argv = yargs(process.argv.slice(2))
 			type: 'string',
 		})
 	})
-	.command('get <filepath> <name>', 'List passwords', (yargs) => {
+	.command('get <filepath> <name>', 'Get password from a given key', (yargs) => {
 		yargs
 			.positional('filepath', {
 				describe: 'password file path',
